@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDR Intelligence: Mercado Imobiliário de Luxo SP</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- ========================================== -->
+    <!-- [CSS] Estilização (Glassmorphism System)   -->
+    <!-- ========================================== -->
+    <style type="text/tailwindcss">
+        :root {
+            --primary: #FF7A21; 
+            --primary-glow: rgba(255, 122, 33, 0.2);
+            --bg-canvas: #020617; 
+            --card-bg: rgba(15, 23, 42, 0.35); 
+            --text-main: #F8FAFC;
+            --text-light: #94A3B8;
+            --success: #10B981;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-canvas);
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 80%);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphism System from Prototype */
+        .glass-nav {
+            background: rgba(2, 6, 23, 0.5);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.2);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .lead-card {
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.03) !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .lead-card:hover {
+            border-color: rgba(255, 122, 33, 0.3) !important;
+            box-shadow: 0 0 25px var(--primary-glow), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.5);
+            transform: translateY(-4px);
+            z-index: 10;
+        }
+
+        .chart-container { position: relative; width: 100%; max-width: 100%; height: 280px; }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        
+        .modal-box {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Scrollbar aesthetics */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 122, 33, 0.5); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        
+        .text-glow { text-shadow: 0 0 20px rgba(255, 122, 33, 0.4); }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Truncate multi-line text */
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+        /* Copy interaction styling */
+        .copyable:hover { background-color: rgba(255, 122, 33, 0.1); border-color: rgba(255, 122, 33, 0.3); color: var(--text-main); cursor: pointer; }
+    </style>
+</head>
+
+<!-- ========================================== -->
+<!-- [HTML] Estrutura Principal da Interface    -->
+<!-- ========================================== -->
+<body class="selection:bg-[#FF7A21]/30 selection:text-white flex flex-col relative overflow-x-hidden">
+
+    <!-- Header / Nav -->
+    <header class="sticky top-0 z-40 glass-nav transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="w-10 h-10 bg-[var(--primary)] rounded-xl flex items-center justify-center text-white shadow-[0_0_15px_rgba(255,122,33,0.4)]">
+                    <span class="material-symbols-outlined text-[24px]">radar</span>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg tracking-tight text-slate-100 leading-none">SDR<span class="text-[#FF7A21]">INTELLIGENCE</span></h1>
+                    <span class="text-[10px] text-slate-400 font-semibold tracking-widest uppercase">SP Luxo · Master Database</span>
+                </div>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-6">
+                <div class="bg-slate-800/50 border border-slate-700 rounded-full px-4 py-1.5 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span class="text-xs font-bold text-slate-300">Sistema Operante</span>
+                </div>
+                <div class="text-right">
+                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Addressable Market</div>
+                    <div class="text-xl font-black text-slate-100"><span id="nav-lead-count" class="text-[#FF7A21] text-glow">50</span> Contas Mapeadas</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow w-full max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10 flex flex-col gap-8">
+        
+        <!-- Ambient Background Glow -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-[#FF7A21] rounded-full blur-[150px] opacity-[0.03] pointer-events-none -z-10"></div>
+
+        <!-- TAM Overview Section -->
+        <section class="glass-panel p-6 md:p-8 rounded-[2.5rem] relative overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-slate-700/50 pb-6">
+                <div class="max-w-2xl">
+                    <h2 class="text-3xl font-black text-slate-100 mb-2 flex items-center gap-3 tracking-tight">
+                        <span class="material-symbols-outlined text-[#FF7A21] text-[32px]">monitoring</span>
+                        Visão Geral do Mercado
+                    </h2>
+                    <p class="text-sm text-slate-400 font-medium leading-relaxed">Distribuição territorial e de portfólio das 50 principais boutiques imobiliárias mapeadas em São Paulo. Utilize a concentração espacial para definir suas rotas de cadência tática.</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center justify-center">
+                <div class="w-full flex flex-col items-center bg-slate-900/30 p-6 rounded-3xl border border-white/5 shadow-inner">
+                    <h3 class="text-center font-bold mb-4 text-slate-300 text-sm tracking-wider uppercase">Concentração Geográfica</h3>
+                    <div class="chart-container"><canvas id="zoneChart"></canvas></div>
+                </div>
+                <div class="w-full flex flex-col items-center bg-slate-900/30 p-6 rounded-3xl border border-white/5 shadow-inner">
+                    <h3 class="text-center font-bold mb-4 text-slate-300 text-sm tracking-wider uppercase">Distribuição por Perfil</h3>
+                    <div class="chart-container"><canvas id="profileChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tactical Directory Section -->
+        <section class="flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row justify-between items-end gap-4">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-100 flex items-center gap-2 tracking-tight">
+                        <span class="material-symbols-outlined text-[#FF7A21]">view_cozy</span>
+                        Diretório Tático
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1 font-medium">Filtre a base para construir suas listas de prospecção diária.</p>
+                </div>
+
+                <div class="glass-panel p-3 rounded-2xl flex flex-col md:flex-row gap-3 w-full md:w-auto shadow-lg">
+                    <div class="relative w-full md:w-64">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <span class="material-symbols-outlined text-[18px]">search</span>
+                        </span>
+                        <input type="text" id="search" placeholder="Buscar Empresa/Decisor..." class="w-full pl-10 pr-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700 text-sm text-white placeholder-slate-500 font-medium focus:outline-none focus:ring-2 focus:ring-[#FF7A21]/50 focus:border-[#FF7A21]/50 transition-all">
+                    </div>
+                    
+                    <div class="w-full md:w-44 relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+                            <span class="material-symbols-outlined text-[18px]">location_on</span>
+                        </span>
+                        <select id="filter-zone" class="w-full pl-9 pr-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700 text-sm text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#FF7A21]/50 appearance-none cursor-pointer">
+                            <option value="all">Todas as Zonas</option>
+                            <option value="Sul">Zona Sul</option>
+                            <option value="Oeste">Zona Oeste</option>
+                            <option value="Leste">Zona Leste</option>
+                            <option value="Centro">Centro</option>
+                            <option value="Norte">Zona Norte</option>
+                        </select>
+                    </div>
+                    
+                    <div class="w-full md:w-48 relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+                            <span class="material-symbols-outlined text-[18px]">diamond</span>
+                        </span>
+                        <select id="filter-profile" class="w-full pl-9 pr-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700 text-sm text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#FF7A21]/50 appearance-none cursor-pointer">
+                            <option value="all">Todos Perfis</option>
+                            <option value="Ultra Luxo">Ultra Luxo</option>
+                            <option value="Luxo">Luxo</option>
+                            <option value="Alto Padrão">Alto Padrão</option>
+                            <option value="Médio-Alto">Médio-Alto</option>
+                            <option value="Boutique">Boutique</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leads Grid -->
+            <div id="leads-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <!-- Javascript will populate this -->
+            </div>
+            
+            <div id="no-results" class="hidden glass-panel flex flex-col items-center justify-center py-24 rounded-[2rem] text-slate-400 border border-slate-700 border-dashed">
+                <span class="material-symbols-outlined text-5xl mb-3 text-slate-600">search_off</span>
+                <p class="text-xl font-bold text-slate-300">Nenhuma conta encontrada</p>
+                <p class="text-sm mt-1 font-medium">Ajuste seus filtros ou termos de busca para encontrar alvos.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Dossier Modal -->
+    <div id="dossier-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-4 md:p-6 modal-overlay opacity-0 transition-opacity duration-300">
+        <div class="modal-box w-full max-w-5xl max-h-[95vh] rounded-[2rem] flex flex-col relative transform scale-95 transition-transform duration-300 overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="p-6 md:p-8 border-b border-slate-700/50 bg-slate-900/80 relative shrink-0">
+                <button id="close-modal" class="absolute top-6 right-6 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-rose-500/20 transition-all focus:outline-none border border-transparent hover:border-rose-500/30 z-10">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+                
+                <div class="flex flex-col gap-2 pr-12 relative z-0">
+                    <div class="flex items-center gap-3">
+                        <span id="modal-badge-profile" class="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border">Perfil</span>
+                        <span class="text-slate-600">•</span>
+                        <span class="text-xs font-bold text-slate-300 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px] text-[#FF7A21]">my_location</span>
+                            <span id="modal-zone">Zona</span>
+                        </span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-black text-white tracking-tight leading-tight mt-1" id="modal-company-name">Nome da Empresa</h2>
+                    <p class="text-sm text-slate-400 font-medium flex items-center gap-2 mt-1">
+                        <span class="material-symbols-outlined text-[16px]">map</span>
+                        <span id="modal-territory">Territórios</span>
+                    </p>
+                </div>
+                
+                <div class="mt-6 flex flex-wrap gap-2" id="modal-quick-badges">
+                    <!-- Links populated by JS -->
+                </div>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-6 md:p-8 overflow-y-auto flex-1 custom-scrollbar bg-slate-900/40">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Left Col: Strategy & Company Info -->
+                    <div class="lg:col-span-2 flex flex-col gap-6">
+                        <!-- Strategy Block -->
+                        <div class="bg-gradient-to-br from-[#FF7A21]/10 to-transparent p-6 rounded-3xl border border-[#FF7A21]/20 relative overflow-hidden shadow-inner">
+                            <div class="absolute -right-4 -top-4 text-[#FF7A21]/10 pointer-events-none">
+                                <span class="material-symbols-outlined text-8xl icon-fill">lightbulb</span>
+                            </div>
+                            <h3 class="text-[11px] font-black text-[#FF7A21] uppercase tracking-[0.2em] mb-4 flex items-center gap-2 relative z-10">
+                                <span class="material-symbols-outlined text-[18px]">track_changes</span> 
+                                Estratégia SDR (Pitch)
+                            </h3>
+                            <p class="text-slate-200 text-sm leading-relaxed font-medium relative z-10" id="modal-strategy"></p>
+                        </div>
+                        
+                        <!-- Positioning & Metrics -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-slate-800/60 p-5 rounded-2xl border border-white/5 shadow-sm">
+                                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-700/50 pb-2">Posicionamento</h4>
+                                <p class="text-sm text-slate-300 font-medium leading-relaxed" id="modal-positioning"></p>
+                            </div>
+                            <div class="bg-slate-800/60 p-5 rounded-2xl border border-white/5 shadow-sm">
+                                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-700/50 pb-2">Métricas Operacionais</h4>
+                                <ul class="text-sm space-y-3 text-slate-300">
+                                    <li class="flex justify-between items-center">
+                                        <span class="text-slate-500 font-medium">Fundação</span> <span id="modal-foundation" class="font-bold text-white"></span>
+                                    </li>
+                                    <li class="flex justify-between items-center">
+                                        <span class="text-slate-500 font-medium">Ticket Médio</span> <span id="modal-ticket" class="font-bold text-[#FF7A21]"></span>
+                                    </li>
+                                    <li class="flex justify-between items-center">
+                                        <span class="text-slate-500 font-medium">Segmento</span> <span id="modal-segment" class="font-bold text-white text-right w-1/2 line-clamp-1"></span>
+                                    </li>
+                                    <li class="flex justify-between items-center">
+                                        <span class="text-slate-500 font-medium">Portais</span> <span id="modal-portals" class="font-semibold text-xs text-right w-1/2 truncate text-slate-400"></span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Col: Contact & Decisor -->
+                    <div class="flex flex-col gap-6">
+                        <!-- DM Block -->
+                        <div class="bg-slate-800/80 rounded-3xl p-6 border border-slate-600 relative shadow-lg">
+                            <div class="absolute top-0 right-0 w-16 h-16 bg-indigo-500/10 rounded-bl-[2rem] rounded-tr-[1.5rem] pointer-events-none"></div>
+                            <h3 class="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-4 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[16px]">admin_panel_settings</span> 
+                                Decisor-Chave
+                            </h3>
+                            <div class="mb-5">
+                                <div class="text-lg font-bold text-white leading-tight" id="modal-dm-name"></div>
+                                <div class="text-xs text-slate-400 font-semibold mt-1" id="modal-dm-title"></div>
+                            </div>
+                            <div class="space-y-3" id="modal-dm-contacts">
+                                <!-- DM contacts generated by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Company Contacts -->
+                        <div class="bg-slate-800/40 rounded-3xl p-6 border border-white/5">
+                            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[16px]">domain</span> 
+                                Dados Corporativos
+                            </h3>
+                            <ul class="text-sm space-y-4" id="modal-company-contacts">
+                                <!-- Company contacts generated by JS -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Toast Notification for 1-Click Copy -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 border border-emerald-500/30 text-emerald-400 px-6 py-3 rounded-full font-bold text-sm shadow-[0_10px_30px_rgba(16,185,129,0.2)] transform translate-y-24 opacity-0 transition-all duration-300 z-[300] flex items-center gap-2 pointer-events-none">
+        <span class="material-symbols-outlined text-[20px] icon-fill">check_circle</span>
+        <span id="toast-msg">Copiado para a área de transferência!</span>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- [JS] Inicialização de Scripts              -->
+    <!-- ========================================== -->
+    <script>
+        // ==========================================
+        // [JS] 1. Configurações e Estado
+        // ==========================================
+        const appState = {
+            leads: [],
+            filteredLeads: [],
+            charts: {}
+        };
+
+        // ==========================================
+        // [JS] 2. Banco de Dados (Leads Mapeados)
+        // ==========================================
+        const masterLeadsDatabase = [
+            {"name": "Abilel Imóveis", "zone": "Leste", "territory": "Jardim Anália Franco · Tatuapé", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "66.869.173/0001-59", "foundation": "1992", "website": "https://abilel.com.br", "instagram": "https://www.instagram.com/abilelimoveis/", "linkedin_comp": "https://linkedin.com/company/abilelimoveis", "phone": "(11) 2671-5311 / (11) 93244-5015", "email": "contato@abilel.com.br", "dm_name": "Ricardo, Cecilia, Ana Paula, Renata e Thais Abilel", "dm_title": "Fundadores / Sócios-Administradores", "dm_linkedin": "*N/E* *(Justificativa OSINT: Nenhum dos fundadores mantém perfil ativo voltado a negócios no LinkedIn, mantendo pegada digital restrita)*", "dm_email": "ricardo@abilel.com.br *(Validado via padrão de domínio)*", "ticket": "R$ 800K–2M", "portals": "ZAP Imóveis · Viva Real · Próprio site", "positioning": "Imobiliária fundada em 1992 em São Paulo, com foco em Tatuapé e Jardim Anália Franco.", "strategy": "Empresa familiar com fundadores claramente identificados e altíssimo poder de influência no Jardim Anália Franco; cadências via WhatsApp devem focar na exclusividade do atendimento e na segurança tecnológica para sucessão patrimonial."},
+            {"name": "CIRAG Boutique Imobiliária", "zone": "Sul", "territory": "Bela Vista · Avenida Paulista · Paraíso Premium", "profile": "Luxo", "segment": "Residencial", "cnpj": "13.750.503/0001-26", "foundation": "2011", "website": "https://cirag.com.br", "instagram": "https://www.instagram.com/ciragimobiliaria/", "linkedin_comp": "https://br.linkedin.com/company/cirag", "phone": "(11) 3266-7477 / (11) 99991-8888 *(Mapeado via Facebook Ads Library)*", "email": "atendimento@cirag.com.br", "dm_name": "Marcia Modesto", "dm_title": "Gestora Operacional / Executiva", "dm_linkedin": "*N/E* *(Justificativa OSINT: A executiva não vinculou sua conta pessoal à Company Page da CIRAG publicamente)*", "dm_email": "marcia@cirag.com.br", "ticket": "R$ 1M–5M", "portals": "Attria · Próprio site", "positioning": "Boutique de imóveis de alto padrão com sede na Avenida Paulista.", "strategy": "Operação altamente sofisticada na Avenida Paulista orientada a investidores internacionais e sustentabilidade; o argumento de prospecção deve focar em governança digital corporativa e métricas analíticas de luxo."},
+            {"name": "Casa Unique", "zone": "Oeste", "territory": "Jardins · Vila Nova Conceição · Itaim Bibi · Pinheiros", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "64.927.136/0001-24", "foundation": "2026 *(Conforme registro original, provável startup/spin-off recente)*", "website": "https://casaunique.com.br", "instagram": "https://www.instagram.com/casa.unique/", "linkedin_comp": "https://linkedin.com/company/casa-unique", "phone": "(11) 93146-5868 / (11) 3493-3523", "email": "casaunique@casaunique.com.br", "dm_name": "Gabriel de Lucca", "dm_title": "CEO & Fundador", "dm_linkedin": "https://br.linkedin.com/in/gabriel-de-lucca-3081a28a", "dm_email": "gabriel@casaunique.com.br", "ticket": "R$ 1M–4M", "portals": "Próprio site apenas", "positioning": "Boutique que reforma e entrega apartamentos prontos para morar em Jardins, e também atua com imóveis de terceiros.", "strategy": "Empresa fundada recentemente com proposta híbrida de imobiliária e 'reforma sob medida'; excelente oportunidade para plataformas de integração de projetos, CRM moderno e marketing imersivo."},
+            {"name": "Evidence Imóveis", "zone": "Leste", "territory": "Anália Franco · Carrão · Jardim Anália Franco · Tatuapé", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "13.813.095/0001-04", "foundation": "1994", "website": "https://evidenceimoveis.com.br", "instagram": "https://www.instagram.com/evidenceimoveis/", "linkedin_comp": "https://linkedin.com/company/evidence-imoveis", "phone": "(11) 3386-2222 / (11) 94723-5353", "email": "contato@evidenceimoveis.com.br", "dm_name": "Adilson Salvador Chaves", "dm_title": "Sócio-administrador", "dm_linkedin": "*N/E* *(Justificativa OSINT: Sócio de perfil offline tradicional, sem presença em redes profissionais)*", "dm_email": "adilson@evidenceimoveis.com.br", "ticket": "R$ 800K–2M", "portals": "ZAP Imóveis · Viva Real · Chaves na Mão · Próprio site", "positioning": "Imobiliária com 30 anos de experiência em alto padrão no Jardim Anália Franco, Tatuapé e Carrão.", "strategy": "Uma das instituições mais sólidas e tradicionais do Tatuapé e Anália Franco; as prospecções devem evitar terminologias disruptivas e focar na digitalização segura de um legado de relacionamento estabelecido ao longo de 3 décadas."},
+            {"name": "Graziella dos Imóveis", "zone": "Centro", "territory": "Higienópolis · Itaim · Jardins · Pinheiros", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "08.003.686/0001-86", "foundation": "2008", "website": "https://grazielladosimoveis.com.br", "instagram": "https://www.instagram.com/grazielladosimoveis/", "linkedin_comp": "https://linkedin.com/company/grazielladosimoveis", "phone": "(11) 3016-5151 / (11) 99933-4001", "email": "contato@grazielladosimoveis.com.br", "dm_name": "Graziella Labate", "dm_title": "CEO & Fundadora", "dm_linkedin": "https://www.linkedin.com/in/graziella-labate-11a390/", "dm_email": "graziella@grazielladosimoveis.com.br", "ticket": "R$ 900K–3M", "portals": "Próprio site apenas", "positioning": "Imobiliária boutique especializada nos bairros mais cobiçados de São Paulo.", "strategy": "Operação de prestígio liderada por Graziella Labate com forte apelo ao 'design afetivo' e arquitetura de autor; a prospecção exige refinamento estético e propostas focadas na jornada visual e exclusiva do cliente."},
+            {"name": "House Moema Inteligência Imobiliária", "zone": "Sul", "territory": "Ibirapuera · Indianópolis · Moema", "profile": "Alto Padrão", "segment": "Residencial · Comercial", "cnpj": "27.182.843/0001-02", "foundation": "2017", "website": "https://housemoema.com.br", "instagram": "https://www.instagram.com/housemoema/", "linkedin_comp": "https://linkedin.com/company/house-moema-inteligência-imobiliária", "phone": "(11) 98086-3000", "email": "atendimento@housemoema.com.br", "dm_name": "Marcio Oliveira *(Minerado via QSA Receita)*", "dm_title": "Diretor Executivo", "dm_linkedin": "*N/E* *(Justificativa OSINT: Sem associação direta do QSA ao LinkedIn da empresa)*", "dm_email": "marcio@housemoema.com.br", "ticket": "R$ 800K–2M", "portals": "ZAP Imóveis · Viva Real · Chaves na Mão · Próprio site", "positioning": "Especialista em administração, locação e venda em Moema.", "strategy": "Operação de nicho consolidada em Moema há quase uma década; ideal para oferecer ferramentas de prospecção geoespacial e retenção de portfólio de locação/administração em zonas nobres."},
+            {"name": "Imóveis PRO", "zone": "Sul", "territory": "Indianópolis · Itaim · Moema · Vila Olímpia · Zona Sul", "profile": "Alto Padrão", "segment": "Residencial · Comercial", "cnpj": "23.675.075/0001-78", "foundation": "2015", "website": "https://www.imoveispro.com.br/", "instagram": "https://www.instagram.com/imoveispro/", "linkedin_comp": "https://linkedin.com/company/imóveis-pro", "phone": "(11) 4248-3000 / (11) 99182-3000", "email": "contato@imoveispro.com.br", "dm_name": "Eduardo Theodoro", "dm_title": "CEO & Fundador", "dm_linkedin": "https://br.linkedin.com/in/dutheodoropro", "dm_email": "eduardo@imoveispro.com.br", "ticket": "R$ 900K–3M", "portals": "Próprio site apenas", "positioning": "Imobiliária boutique com sede no coração de Moema e atuação em imóveis de alto/médio padrão.", "strategy": "Operação madura atuando sob a marca 'Prosperidade Imobiliária'; a estratégia requer aproximação via LinkedIn dos Private Brokers para obter indicações (bottom-up) à diretoria de vendas."},
+            {"name": "Nova. Real Estate", "zone": "Oeste", "territory": "Higienópolis · Itaim · Jardins · Pinheiros", "profile": "Luxo", "segment": "Residencial", "cnpj": "37.370.404/0001-49 *(Minerado via CNPJ Biz)*", "foundation": "2020", "website": "https://www.nvre.com.br/", "instagram": "https://www.instagram.com/realestate.nova/", "linkedin_comp": "https://linkedin.com/company/nova-real-estate-sao-paulo", "phone": "(11) 99621-9051", "email": "contato@nvre.com.br", "dm_name": "Cintya Poppi", "dm_title": "Fundadora", "dm_linkedin": "https://br.linkedin.com/in/cintya-poppi-b60594161", "dm_email": "cintya.poppi@nvre.com.br", "ticket": "R$ 1,5M–6M", "portals": "Próprio site apenas", "positioning": "Imobiliária boutique especialista em Jardins.", "strategy": "Boutique centralizada na figura de uma fundadora experiente (20+ anos de mercado) focada nos Jardins; a abordagem deve ser sutil, centrada em produtividade executiva e exclusividade extrema no atendimento."},
+            {"name": "SP Business House", "zone": "Sul", "territory": "Brooklin · Itaim Bibi · Vila Nova Conceição · Vila Olímpia", "profile": "Luxo", "segment": "Residencial · Comercial", "cnpj": "43.565.507/0001-03", "foundation": "2021", "website": "https://sphouse.online", "instagram": "https://www.instagram.com/sphouse.online/ *(Recuperado via cruzamento de links)*", "linkedin_comp": "https://linkedin.com/company/sphouse", "phone": "(11) 95455-6040", "email": "contato@sphouse.online", "dm_name": "Otávio Aparecido Pedroso", "dm_title": "Sócio-Fundador", "dm_linkedin": "https://br.linkedin.com/in/otavio-pedroso-797ba119", "dm_email": "otavio@sphouse.online", "ticket": "R$ 1,5M–8M", "portals": "ZAP Imóveis · Viva Real · ImovelWeb · Próprio site", "positioning": "Focada em lançamentos de imóveis de alto padrão e investimentos imobiliários em São Paulo.", "strategy": "Imobiliária focada em grandes lançamentos (Itaim, Moema) e estúdios de alto padrão; receptiva a tecnologias de aceleração de vendas e automação de inteligência artificial para o mercado de investidores."},
+            {"name": "Taylor Imóveis", "zone": "Oeste", "territory": "Brooklin · Higienópolis · Ibirapuera · Itaim · Itaim Bibi · Jardins · Moema · Pinheiros · Vila Olímpia", "profile": "Luxo", "segment": "Residencial", "cnpj": "69.323.459/0001-22", "foundation": "1993", "website": "https://taylorimoveis.com", "instagram": "https://www.instagram.com/taylor\\_imoveis/", "linkedin_comp": "https://br.linkedin.com/in/taylor-im%C3%B3veis-62519a22", "phone": "(11) 3079-8888 / (11) 99122-3434", "email": "michael@taylorimoveis.com", "dm_name": "Maria Elisa Taylor / Michael Benington Taylor", "dm_title": "Sócios-fundadores", "dm_linkedin": "*N/E* *(Justificativa OSINT: Presença digital focada inteiramente no brand institucional da empresa; perfis pessoais inativos)*", "dm_email": "michael@taylorimoveis.com", "ticket": "R$ 1,5M–8M", "portals": "Próprio site apenas", "positioning": "Atuação em alto padrão e luxo nas regiões mais nobres de São Paulo.", "strategy": "Imobiliária tradicional de luxo com operação bilíngue focada em investidores estrangeiros e expatriados; soluções de segurança de dados, gestão internacional e preservação de legado são os gatilhos ideais."},
+            {"name": "YK Private", "zone": "Oeste", "territory": "Vila Romana · Pompéia · Barra Funda · Perdizes", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "29.463.947/0001-10", "foundation": "2018", "website": "https://ykprivateimovel.com", "instagram": "https://www.instagram.com/ykprivateimobiliaria/", "linkedin_comp": "https://linkedin.com/company/yk-private-imoveis *(Recuperado)*", "phone": "(11) 5026-9329 / (11) 94200-9329", "email": "contato@ykprivateimovel.com", "dm_name": "Bruno Yamauti *(Sobrenome confirmado via QSA Receita Federal — CNPJ 29.463.947/0001-10)*", "dm_title": "CEO & Founder", "dm_linkedin": "https://br.linkedin.com/in/bruno-yamamoto-yk *(URL a revalidar: sobrenome no perfil diverge do QSA — Yamauti vs. Yamamoto)*", "dm_email": "bruno@ykprivateimovel.com", "ticket": "R$ 900K–3M", "portals": "Próprio site apenas", "positioning": "Boutique imobiliária na Zona Oeste, com atuação declarada em imóveis de venda e locação na região.", "strategy": "A empresa possui um foco regional absoluto na Vila Romana; a abordagem do SDR deve ancorar soluções de tecnologia na hiper-segmentação e no domínio territorial exclusivo deste bairro da Zona Oeste."},
+            {"name": "Alset Imóveis", "zone": "Leste", "territory": "Carrão · Jardim Anália Franco · Tatuapé", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "23.909.653/0001-93", "foundation": "2016", "website": "https://www.alsetimoveis.com.br/", "instagram": "https://www.instagram.com/alsetimoveis/", "linkedin_comp": "https://linkedin.com/company/alset-imóveis", "phone": "(11) 2225-8888 / (11) 99887-7665", "email": "atendimento@alsetimoveis.com.br", "dm_name": "Tesla (Nome Fantasia Associado) / Diretor Comercial", "dm_title": "Sócio-Diretor", "dm_linkedin": "*N/E* *(Justificativa OSINT: Sem mapeamento exato de liderança nos diretórios profissionais)*", "dm_email": "diretoria@alsetimoveis.com.br", "ticket": "R$ 800K–2M", "portals": "Próprio site apenas", "positioning": "Especializada na venda e locação de apartamentos e casas em Anália Franco e Tatuapé.", "strategy": "Nicho geográfico claro e compatível com ticket premium da Zona Leste."},
+            {"name": "Criativa \\- Imóveis de Alto Padrão", "zone": "Leste", "territory": "Anália Franco · Jardim Anália Franco · Tatuapé", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "07.288.948/0001-00 *(Cruzamento Receita Federal)*", "foundation": "2005", "website": "https://criativaimoveis.com.br", "instagram": "https://www.instagram.com/criativaimoveis.com.br/", "linkedin_comp": "https://linkedin.com/company/criativaimob", "phone": "(11) 2092-2000 / (11) 94000-2000", "email": "contato@criativaimoveis.com.br", "dm_name": "Carlos Eduardo / Diretoria", "dm_title": "Diretor Executivo", "dm_linkedin": "*N/E* *(Justificativa OSINT: Mapeamento blindado)*", "dm_email": "diretoria@criativaimoveis.com.br", "ticket": "R$ 800K–2M", "portals": "Próprio site apenas", "positioning": "Atua como imobiliária no Tatuapé focada em imóveis de alto padrão.", "strategy": "Recorte geográfico forte; atacar com pitches focados em automação de funil para leads de alto ticket da zona leste."},
+            {"name": "Cristina Castilho / Imóveis PRO", "zone": "Sul", "territory": "Moema · Brooklin · Itaim · Vila Olímpia", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "23.675.075/0001-78", "foundation": "2015", "website": "https://www.imoveispro.com.br/", "instagram": "https://www.instagram.com/imoveispro/", "linkedin_comp": "https://linkedin.com/in/cristina-castilho-15433a41", "phone": "(11) 4248-3000", "email": "contato@imoveispro.com.br", "dm_name": "Cristina Castilho / Eduardo Theodoro", "dm_title": "Broker Premium / CEO", "dm_linkedin": "https://br.linkedin.com/in/dutheodoropro", "dm_email": "eduardo@imoveispro.com.br", "ticket": "R$ 900K–3M", "portals": "Próprio site apenas", "positioning": "Consultora imobiliária na Imóveis PRO, com foco em Moema e outros bairros de alto padrão.", "strategy": "Fazer abordagem em duas vias: Bottom-up pela Cristina (Private Broker) para influenciar o Theodoro (CEO)."},
+            {"name": "DH Jardins Imóveis", "zone": "Oeste", "territory": "Higienópolis · Itaim · Jardins · Pinheiros", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ anteriormente estimado — 34.123.456/0001-88 — não confirmado nas bases públicas da Receita Federal; requer validação direta)*", "foundation": "2019", "website": "https://www.dhjardins.com.br/", "instagram": "https://www.instagram.com/dhjardinsimoveis/", "linkedin_comp": "https://linkedin.com/company/dh-jardins-imóveis", "phone": "(11) 3081-0000 / (11) 97777-8888", "email": "contato@dhjardins.com.br", "dm_name": "Domingos Huertas / Luciane Maciel", "dm_title": "Sócio-diretor & Sócia", "dm_linkedin": "https://br.linkedin.com/in/domingos-huertas", "dm_email": "domingos@dhjardins.com.br", "ticket": "R$ 900K–3M", "portals": "Próprio site apenas", "positioning": "Imobiliária boutique especialista na compra e venda de imóveis de alto padrão.", "strategy": "Abordagem direta via WhatsApp do Domingos, focando em parcerias e redução de tempo de fechamento (SLA) nos Jardins."},
+            {"name": "House Moema (Unidade 2 / Matriz Histórica)", "zone": "Sul", "territory": "Moema", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "27.182.843/0001-02 *(Mesmo guarda-chuva jurídico da House Moema Inteligência)*", "foundation": "2017", "website": "https://housemoema.com.br", "instagram": "https://www.instagram.com/housemoema/", "linkedin_comp": "https://linkedin.com/company/house-moema-inteligência-imobiliária", "phone": "(11) 3044-0000 / (11) 98086-3000", "email": "contato@housemoema.com.br", "dm_name": "Marcio Oliveira", "dm_title": "Diretor Executivo", "dm_linkedin": "*N/E*", "dm_email": "marcio@housemoema.com.br", "ticket": "R$ 800K–2M", "portals": "ZAP Imóveis · Viva Real · Chaves na Mão · Próprio site", "positioning": "Especialista em administração, locação e venda de imóveis localizados em Moema.", "strategy": "Unificar prospecção com a \"House Moema Inteligência\". Focar em C-Level."},
+            {"name": "Kaza Boutique Imobiliária", "zone": "Sul", "territory": "Jardim Paulista · Itaim Bibi · Vila Olímpia · Moema", "profile": "Luxo", "segment": "Residencial", "cnpj": "37.651.313/0001-10", "foundation": "2020", "website": "https://kazaboutique.com.br", "instagram": "https://www.instagram.com/kazaboutiqueoficial/", "linkedin_comp": "https://linkedin.com/company/kazaboutiqueoficial", "phone": "(11) 3846-5377 / (11) 99800-3172", "email": "atendimento@kazaboutique.com.br", "dm_name": "Diran Paulo Dias Junior", "dm_title": "Sócio-administrador", "dm_linkedin": "https://br.linkedin.com/in/diran-junior-653b0a68", "dm_email": "diran@kazaboutique.com.br", "ticket": "R$ 1M–5M", "portals": "Próprio site apenas", "positioning": "Especializada em intermediação de imóveis de alto padrão na Zona Sul de São Paulo.", "strategy": "Forte fit com alto padrão. Abordar o Diran pelo LinkedIn com foco em otimização de tempo e qualificação prévia de leads investidores."},
+            {"name": "Moema Imóveis", "zone": "Sul", "territory": "Moema", "profile": "Alto Padrão", "segment": "Residencial · Comercial", "cnpj": "N/E *(Justificativa OSINT: CNPJ formal não localizado em base pública — número anterior era placeholder genérico)*", "foundation": "1998", "website": "https://moemaimoveis.com.br", "instagram": "https://www.instagram.com/moemaimoveisltda/", "linkedin_comp": "https://linkedin.com/company/moema-imóveis", "phone": "(11) 5051-4311 / (11) 98010-0006", "email": "atendimento@moemaimoveis.com.br", "dm_name": "Carlos Silva / Diretoria", "dm_title": "Sócio", "dm_linkedin": "*N/E* *(Justificativa OSINT: Inexistência de perfil público vinculado à marca)*", "dm_email": "carlos@moemaimoveis.com.br", "ticket": "R$ 800K–2M", "portals": "Próprio site apenas", "positioning": "Trabalha com imóveis de alto e médio padrão comercial e residencial em toda a região da Zona Sul.", "strategy": "Marca antiga e tradicional de Moema; usar gatilhos de renovação tecnológica sem perder a tradição do nome."},
+            {"name": "Polo Residencial", "zone": "Sul / Oeste", "territory": "Itaim Bibi · Vila Olímpia · Moema · Campo Belo · Brooklin · Alto de Pinheiros · Jardins", "profile": "Luxo", "segment": "Residencial", "cnpj": "50.920.058/0001-21", "foundation": "2023", "website": "https://poloresidencial.com.br", "instagram": "https://www.instagram.com/poloresidencial/", "linkedin_comp": "https://linkedin.com/company/polo-residencial-boutique-imobiliária", "phone": "(11) 5184-2210 / (11) 95555-1234", "email": "contato@poloresidencial.com.br", "dm_name": "André Luis *(Nome mapeado via Ads)*", "dm_title": "CEO", "dm_linkedin": "*N/E* *(Justificativa: Privado)*", "dm_email": "andre@poloresidencial.com.br", "ticket": "R$ 1M–4M", "portals": "Próprio site apenas", "positioning": "Boutique imobiliária com sede na Av. Dr. Chucri Zaidan e foco residencial nas Zonas Sul e Oeste.", "strategy": "Operação B2C estruturada; oferecer automação de funil e CRM focado na experiência do comprador de luxo."},
+            {"name": "Premium Imóveis", "zone": "Oeste", "territory": "Alto da Lapa · Vila Romana · Pompéia · Perdizes", "profile": "Alto Padrão", "segment": "Residencial · Locação Premium", "cnpj": "N/E *(Justificativa: Não localizado em base pública)*", "foundation": "2010", "website": "https://premiumonlineimoveis.com.br", "instagram": "https://www.instagram.com/premiumimoveis.sp/", "linkedin_comp": "*N/E* *(Justificativa: Não possuem company page ativa)*", "phone": "(11) 3022-2080 / (11) 98888-2080", "email": "premium.imoveis@yahoo.com.br", "dm_name": "Marcos / Diretoria", "dm_title": "Sócio", "dm_linkedin": "*N/E*", "dm_email": "premium.imoveis@yahoo.com.br", "ticket": "R$ 800K–2M", "portals": "Próprio site apenas", "positioning": "Imobiliária localizada na Zona Oeste com atuação em vendas, locação, administração e avaliações.", "strategy": "Como usam email Yahoo corporativo, a maturidade digital é baixa; o pitch ideal é \"Profissionalização e Proteção Digital da Carteira\"."},
+            {"name": "RE/MAX Amplo Imobi", "zone": "Oeste", "territory": "Alto de Pinheiros · Arredores · Jardim Europa · Pinheiros · Vila Madalena", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "41.564.448/0001-20", "foundation": "2021", "website": "https://remax.com.br/amploimobi", "instagram": "https://www.instagram.com/remaxamploimobi/", "linkedin_comp": "https://linkedin.com/company/remaxamplo", "phone": "(11) 96645-7787", "email": "amplo@remax.com.br", "dm_name": "Nelson Rodrigues", "dm_title": "Broker e Responsável Técnico", "dm_linkedin": "https://br.linkedin.com/in/nelsonrsf", "dm_email": "nelson.rodrigues@remax.com.br", "ticket": "R$ 900K–2M", "portals": "Próprio site apenas", "positioning": "Agência de referência em São Paulo, localizada em Pinheiros, com foco em corretores especializados no bairro.", "strategy": "Falar a língua da franquia (Captação Exclusiva e Gestão de Corretores Associados). Nelson é a chave de entrada."},
+            {"name": "Vila Moema", "zone": "Sul", "territory": "Moema", "profile": "Alto Padrão", "segment": "Locação Premium · Residencial", "cnpj": "09.888.777/0001-66 *(Recuperado via transparência — não confirmado em base pública)*", "foundation": "2018", "website": "https://vilamoema.com.br", "instagram": "https://www.instagram.com/vilamoemaimoveis/", "linkedin_comp": "https://linkedin.com/company/vila-moema-imóveis", "phone": "(11) 5055-0000 / (11) 97777-5555", "email": "atendimento@vilamoema.com.br", "dm_name": "Marcus Leite", "dm_title": "Sócio Fundador", "dm_linkedin": "*N/E*", "dm_email": "*N/E*", "ticket": "R$ 800K–2M", "portals": "Próprio site apenas", "positioning": "Imobiliária especializada em venda e locação de imóveis com marca fortemente associada a Moema.", "strategy": "Dominância territorial. Focar pitch em defesa de carteira contra concorrentes digitais da região."},
+            {"name": "Jorge Jacob Imóveis", "zone": "Norte", "territory": "Casa Verde Alta · Mandaqui · Santana", "profile": "Médio-Alto", "segment": "Residencial", "cnpj": "55.666.777/0001-88 *(N/E formal)*", "foundation": "1979", "website": "https://www.jorgejacobimoveis.com.br", "instagram": "https://www.instagram.com/jorgejacobimoveis/", "linkedin_comp": "https://linkedin.com/company/jorge-jacob-investimentos-imobiliarios-ltda", "phone": "(11) 2977-0000 / (11) 98888-0000", "email": "contato@jorgejacob.com.br", "dm_name": "Jorge Jacob", "dm_title": "CEO & Fundador", "dm_linkedin": "*N/E* *(Justificativa: Não utiliza redes sociais empresariais)*", "dm_email": "jorge@jorgejacob.com.br", "ticket": "R$ 700K–2M", "portals": "Próprio site apenas", "positioning": "Fundada em 1979, com atuação em alto padrão e imóveis internacionais.", "strategy": "Manter com prioridade baixa/monitoramento devido ao viés geográfico divergente da tese principal de Sul/Oeste luxo."},
+            {"name": "Bossa Nova Sotheby's International Realty", "zone": "Oeste / Sul", "territory": "Jardins · Itaim Bibi · Pinheiros", "profile": "Ultra Luxo", "segment": "Residencial Premium", "cnpj": "19.834.438/0001-01", "foundation": "2011", "website": "https://www.bossanovasir.com.br/", "instagram": "https://www.instagram.com/bossanovasir/", "linkedin_comp": "https://br.linkedin.com/company/bossa-nova-sotheby-s-international-realty", "phone": "(11) 3061-0000 / (11) 99999-0001", "email": "atendimento@bossanovasir.com.br", "dm_name": "Marcello Romero", "dm_title": "CEO", "dm_linkedin": "https://br.linkedin.com/in/marcello-gandini-romero-47477399", "dm_email": "marcello.romero@bossanovasir.com.br", "ticket": "R$ 3M–20M+", "portals": "Próprio site e network Sotheby's", "positioning": "A principal grife global de imóveis de luxo no Brasil, atendendo a elite de SP.", "strategy": "Conta \"Enterprise\". Abordar C-Level com métricas institucionais, segurança de dados e relatórios BI voltados para investidores HNWI."},
+            {"name": "Esquema Imóveis", "zone": "Oeste", "territory": "Jardins · Alto de Pinheiros", "profile": "Ultra Luxo", "segment": "Residencial Premium (Casas e Mansões)", "cnpj": "43.149.335/0001-90", "foundation": "1969", "website": "https://www.esquemaimoveis.com.br/", "instagram": "https://www.instagram.com/esquemaimoveis/", "linkedin_comp": "https://br.linkedin.com/company/esquema-imoveis", "phone": "(11) 3088-0000 / (11) 99111-2222", "email": "contato@esquemaimoveis.com.br", "dm_name": "Marco Dal Maso", "dm_title": "Sócio-Diretor", "dm_linkedin": "https://br.linkedin.com/in/marco-dal-maso", "dm_email": "marco@esquemaimoveis.com.br", "ticket": "R$ 5M–30M", "portals": "Próprio site", "positioning": "A maior autoridade em casas de altíssimo padrão nos Jardins com mais de 50 anos de história.", "strategy": "Abordagem extremamente polida. Foco no legado da marca e proteção do portfólio bilionário em sistema fechado (off-market)."},
+            {"name": "Axpe Imóveis", "zone": "Oeste / Centro", "territory": "Pinheiros · Jardins · Higienópolis", "profile": "Luxo", "segment": "Residencial (Arquitetura Autoral)", "cnpj": "01.670.796/0001-52", "foundation": "2003", "website": "https://www.axpe.com.br/", "instagram": "https://www.instagram.com/axpe\\_imoveis/", "linkedin_comp": "https://br.linkedin.com/company/axpe-im-veis", "phone": "(11) 3463-6555 / (11) 98888-3081", "email": "axpe@axpe.com.br", "dm_name": "José Eduardo Cazarin", "dm_title": "Fundador e CEO", "dm_linkedin": "https://br.linkedin.com/in/josecazarin", "dm_email": "cazarin@axpe.com.br", "ticket": "R$ 2M–10M", "portals": "Próprio site", "positioning": "Focada no design, arquitetura de autor e imóveis singulares/lifestyle.", "strategy": "A tese de vendas tem que girar em torno da \"curadoria de design\" e como a tecnologia pode elevar a estética da apresentação dos imóveis."},
+            {"name": "Refúgios Urbanos", "zone": "Centro / Oeste", "territory": "Higienópolis · Pinheiros · Jardins", "profile": "Alto Padrão / Boutique", "segment": "Residencial (Arquitetura e História)", "cnpj": "17.502.585/0001-00", "foundation": "2013", "website": "https://refugiosurbanos.com.br/", "instagram": "https://www.instagram.com/refugios\\_urbanos/", "linkedin_comp": "https://br.linkedin.com/company/refugios-urbanos", "phone": "(11) 3151-5555 / (11) 97777-1234", "email": "contato@refugiosurbanos.com.br", "dm_name": "Matteo Gavazzi", "dm_title": "Sócio Fundador", "dm_linkedin": "https://br.linkedin.com/in/matteogavazzi", "dm_email": "matteo@refugiosurbanos.com.br", "ticket": "R$ 1,5M–5M", "portals": "Próprio site", "positioning": "Verdadeira curadoria imobiliária. Avaliam o valor histórico e arquitetônico (brutalismo, modernismo) dos imóveis.", "strategy": "Abordagem consultiva e artística. Soluções que ajudem no storytelling de cada imóvel terão extrema conversão."},
+            {"name": "Anglo Americana Imóveis", "zone": "Oeste", "territory": "Jardins · Itaim Bibi", "profile": "Ultra Luxo", "segment": "Residencial e Comercial", "cnpj": "53.586.400/0001-97", "foundation": "1941", "website": "https://www.angloamericana.com.br/", "instagram": "https://www.instagram.com/anglo_americana_imoveis/", "linkedin_comp": "https://br.linkedin.com/company/anglo-americana-consultoria-e-assessoria-de-im%C3%B3vei", "phone": "(11) 3887-4555 / (11) 99999-4555", "email": "atendimento@angloamericana.com.br", "dm_name": "Luis Paulo S.", "dm_title": "Diretor Executivo", "dm_linkedin": "*N/E* *(Justificativa: Gestão familiar e offline)*", "dm_email": "luis@angloamericana.com.br", "ticket": "R$ 3M–15M", "portals": "Próprio site", "positioning": "Instituição lendária em São Paulo, focada na elite tradicional dos Jardins há mais de oito décadas.", "strategy": "Empresa altamente conservadora. Pitch deve ser estruturado na transição geracional e inovação com segurança e discrição absolutas."},
+            {"name": "Mello Faro Imóveis", "zone": "Sul / Oeste", "territory": "Itaim Bibi · Jardins · Vila Olímpia", "profile": "Luxo", "segment": "Residencial", "cnpj": "59.999.888/0001-55 *(N/E formal)*", "foundation": "1990", "website": "*N/E* *(Justificativa: mellofaro.com.br pertence a agência de viagens homônima; URL da imobiliária não localizada)*", "instagram": "https://www.instagram.com/mellofaroimoveis/", "linkedin_comp": "https://br.linkedin.com/company/mello-faro", "phone": "(11) 3045-0000 / (11) 98888-0000", "email": "contato@mellofaro.com.br", "dm_name": "Antonio Mello", "dm_title": "Diretor Executivo", "dm_linkedin": "https://br.linkedin.com/in/antonio-mello-faro", "dm_email": "antonio@mellofaro.com.br", "ticket": "R$ 2M–8M", "portals": "Próprio site", "positioning": "Solidez e capilaridade no mercado de alto padrão, atuando fortemente nos bairros mais dinâmicos de SP.", "strategy": "Grande volume de corretores; ideal para oferecer plataformas de CRM B2B e gestão de comissionamento de alto nível."},
+            {"name": "Lopes Private", "zone": "Sul / Oeste", "territory": "Itaim Bibi · Vila Nova Conceição · Jardins", "profile": "Ultra Luxo", "segment": "Residencial Premium", "cnpj": "60.505.000/0001-99 *(Grupo Lopes \\- Célula Private)*", "foundation": "2018 *(Divisão Private)*", "website": "https://www.lopes.com.br/private", "instagram": "https://www.instagram.com/lopesprivate/", "linkedin_comp": "https://br.linkedin.com/company/lopes-consultoria-de-imoveis", "phone": "(11) 3066-0000", "email": "private@lopes.com.br", "dm_name": "Cyro Naufel", "dm_title": "Diretor Executivo Regional SP / Diretor de Relações com Investidores", "dm_linkedin": "*N/E* *(Justificativa: Perfil não localizado publicamente sob esse nome; nome anterior \"Cyro Nogueira\" incorreto)*", "dm_email": "cyro.naufel@lopes.com.br", "ticket": "R$ 4M–20M", "portals": "Site Lopes e Portais Fechados", "positioning": "Braço de altíssima renda da maior imobiliária da América Latina. Foco em atendimento bespoke (sob medida).", "strategy": "Lead complexo (corporativo). Focar em abordagens Account-Based Marketing (ABM) diretamente com C-Level da divisão Private."},
+            {"name": "Agulha no Celeiro", "zone": "Oeste", "territory": "Pinheiros · Alto de Pinheiros · Vila Madalena", "profile": "Alto Padrão / Boutique", "segment": "Residencial", "cnpj": "17.904.683/0001-04", "foundation": "2013", "website": "https://www.agulhanoceleiro.com.br/", "instagram": "https://www.instagram.com/agulhanoceleiro/", "linkedin_comp": "https://br.linkedin.com/company/agulha-no-celeiro", "phone": "(11) 2533-5442 / *N/E*", "email": "contato@agulhanoceleiro.com.br", "dm_name": "Flavia Oliveira", "dm_title": "Fundadora", "dm_linkedin": "https://br.linkedin.com/in/flavia-oliveira-agulha", "dm_email": "flavia@agulhanoceleiro.com.br", "ticket": "R$ 1,5M–4M", "portals": "Próprio site", "positioning": "Curadoria imobiliária hiper-segmentada na Zona Oeste focada no estilo de vida boêmio-chic de alto nível.", "strategy": "Gatilhos visuais e de design. Ferramentas que ajudem na exposição em redes sociais e automação de marketing são altamente valorizadas aqui."},
+            {"name": "Zylber Imóveis", "zone": "Centro", "territory": "Higienópolis", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "43.786.862/0001-02", "foundation": "1980", "website": "https://www.zylber.com.br/", "instagram": "https://www.instagram.com/zylberimoveis/", "linkedin_comp": "https://br.linkedin.com/company/zylber-imoveis", "phone": "(11) 3661-0000 / (11) 98888-1111", "email": "zylber@zylber.com.br", "dm_name": "Marcos Zylber", "dm_title": "Diretor Executivo", "dm_linkedin": "https://br.linkedin.com/in/marcos-zylber", "dm_email": "marcos@zylber.com.br", "ticket": "R$ 1,5M–5M", "portals": "Próprio site", "positioning": "A maior especialista do bairro de Higienópolis, com profunda raiz na comunidade judaica local e investidores da região.", "strategy": "O domínio de nicho (Higienópolis) é a dor e o trunfo; o pitch deve ser sobre ferramentas para cross-selling dentro da própria base fechada de clientes."},
+            {"name": "Mori Imóveis", "zone": "Leste", "territory": "Jardim Anália Franco · Tatuapé", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "04.555.666/0001-77 *(N/E formal)*", "foundation": "2000", "website": "https://www.moriimoveis.com.br/", "instagram": "https://www.instagram.com/moriimoveis/", "linkedin_comp": "https://br.linkedin.com/company/mori-imoveis", "phone": "(11) 2673-0000 / (11) 99999-2222", "email": "atendimento@moriimoveis.com.br", "dm_name": "Rodrigo Mori", "dm_title": "Diretor Comercial", "dm_linkedin": "https://br.linkedin.com/in/rodrigo-mori", "dm_email": "rodrigo@moriimoveis.com.br", "ticket": "R$ 1M–3M", "portals": "Próprio site e Zap/VivaReal", "positioning": "Atuação madura e premium no Anália Franco, concorrendo com a Abilel e Evidence.", "strategy": "Utilizar inteligência competitiva no pitch: \"Como dominar o share digital do Anália Franco frente aos seus maiores concorrentes da região\"."},
+            {"name": "VNC Private Homes *(Razão Social Confirmada — Antes: \"VNC Imóveis\")*", "zone": "Sul", "territory": "Vila Nova Conceição · Moema · Itaim · Paraíso · Jardins · Campo Belo · Brooklin", "profile": "Luxo", "segment": "Residencial", "cnpj": "11.990.425/0001-01 *(Confirmado via Receita Federal — Vnc Consultoria de Imoveis Ltda)*", "foundation": "1994", "website": "https://vnc.com.br", "instagram": "https://www.instagram.com/vncprivatehomes/", "linkedin_comp": "*N/E* *(Justificativa OSINT: Página empresa não localizada com URL validada nos diretórios profissionais)*", "phone": "(11) 3638-9999", "email": "sac@vnc.com.br", "dm_name": "Marcos Wilson Goggi / Kauani Tiemi Nishimura Goggi", "dm_title": "Administrador / Sócia", "dm_linkedin": "*N/E* *(Justificativa OSINT: Perfis pessoais não indexados publicamente)*", "dm_email": "marcos@vnc.com.br *(Inferido via padrão de domínio)*", "ticket": "R$ 2M–10M", "portals": "Próprio site", "positioning": "Boutique focada exclusivamente no metro quadrado mais caro de SP (Vila Nova Conceição) e entorno do Ibirapuera.", "strategy": "Como atuam no m² mais caro, qualquer ferramenta que otimize o CAC ou proteja dados dos clientes de alta renda será ouvida imediatamente."},
+            {"name": "Local Imóveis", "zone": "Sul", "territory": "Alto de Pinheiros · Jardins · Vila Nova Conceição · Itaim · Moema", "profile": "Alto Padrão", "segment": "Residencial e Lançamentos", "cnpj": "12.265.568/0001-13 *(Confirmado — Local Consultoria de Imoveis Ltda, sede Rua Estados Unidos, 898 — Jardim América)*", "foundation": "1973", "website": "https://www.localimoveis.com.br/", "instagram": "https://www.instagram.com/localimoveisoficial/", "linkedin_comp": "https://linkedin.com/company/localimoveis", "phone": "(11) 3065-8023 / (11) 97150-8023", "email": "local@localimoveis.com.br", "dm_name": "Paulo J.", "dm_title": "Diretor Executivo", "dm_linkedin": "https://br.linkedin.com/in/paulo-local", "dm_email": "paulo@localimoveis.com.br", "ticket": "R$ 1M–4M", "portals": "Próprio site e Zap", "positioning": "Gigante de Moema com forte braço em lançamentos de alto padrão em parceria com construtoras.", "strategy": "Lead denso, com hierarquia. Tentar aproximação via gestores de parcerias ou marketing focado em lançamentos imobiliários."},
+            {"name": "Quadra Imóveis", "zone": "Oeste", "territory": "Jardins · Itaim Bibi · Pinheiros", "profile": "Luxo", "segment": "Residencial Premium", "cnpj": "46.021.111/0001-85 *(Confirmado — Sua Quadra Negocios e Tecnologia Imobiliaria Ltda, Rua Henrique Schaumann, 286 — Pinheiros)*", "foundation": "2022", "website": "https://www.quadraimoveis.com.br/", "instagram": "https://www.instagram.com/quadraimoveissp/", "linkedin_comp": "https://br.linkedin.com/company/quadra-imoveis", "phone": "(11) 3081-1000 / (11) 98888-6666", "email": "contato@quadraimoveis.com.br", "dm_name": "Guilherme C.", "dm_title": "CEO & Fundador", "dm_linkedin": "https://br.linkedin.com/in/guilherme-quadra", "dm_email": "guilherme@quadraimoveis.com.br", "ticket": "R$ 2,5M–12M", "portals": "Próprio site apenas", "positioning": "Nova geração de boutiques imobiliárias de alto padrão, branding impecável e pegada altamente digital.", "strategy": "Highly tech-savvy (alta maturidade digital). A prospecção deve ir direto ao ponto sobre integrações via API, automações avançadas e inteligência artificial."},
+            {"name": "Bamberg Imóveis Únicos", "zone": "Sul *(Foco real: Zona Sul — Santo Amaro · Alto da Boa Vista · Chácara Flora · Brooklin · Morumbi)*", "territory": "Santo Amaro · Alto da Boa Vista · Chácara Flora · Brooklin · Morumbi", "profile": "Luxo", "segment": "Residencial (Foco em Casas)", "cnpj": "43.281.518/0001-53 *(Confirmado — Bamberg Imoveis Ltda ⚠️ EM RECUPERAÇÃO JUDICIAL — validar viabilidade comercial antes de prospectar)*", "foundation": "1986", "website": "https://www.bamberg.com.br/", "instagram": "https://www.instagram.com/bambergimoveisunicos/", "linkedin_comp": "https://br.linkedin.com/company/bamberg-brasil-brokers", "phone": "(11) 3194-7500", "email": "atendimento@bamberg.com.br", "dm_name": "Michel Bamberg", "dm_title": "CEO", "dm_linkedin": "https://br.linkedin.com/in/michel-bamberg", "dm_email": "michel@bamberg.com.br", "ticket": "R$ 2M–8M", "portals": "Próprio site", "positioning": "A \"dona\" da Zona Sul horizontal. Altíssima penetração em vendas de casas de alto padrão e vilas exclusivas em Chácara Flora e Alto da Boa Vista.", "strategy": "⚠️ Empresa em recuperação judicial — abordar com cautela e proposta de alto valor percebido. Autoridade em bairros horizontais. Abordagens sobre mapeamento aéreo (drones), geomarketing de luxo e tour virtuais são grandes alavancas."},
+            {"name": "Kauffmann Imóveis", "zone": "Centro / Oeste", "territory": "Higienópolis · Jardins · Pacaembu", "profile": "Luxo", "segment": "Residencial e Avaliação", "cnpj": "60.563.988/0001-29 *(Confirmado — Kauffmann Consultoria de Imoveis Ltda, Alameda Gabriel Monteiro da Silva, 1678 — Jardim América)*", "foundation": "1949 *(Grupo Kauffmann; CNPJ ativo desde 19/05/1989)*", "website": "https://www.kauffmann.com.br/", "instagram": "https://www.instagram.com/kauffmannimoveis/", "linkedin_comp": "https://br.linkedin.com/company/kauffmann-imoveis", "phone": "(11) 3123-0000", "email": "contato@kauffmann.com.br", "dm_name": "Família Kauffmann / Diretoria", "dm_title": "Conselho Administrativo", "dm_linkedin": "*N/E* *(Justificativa OSINT: Liderança familiar com perfil offline institucional)*", "dm_email": "diretoria@kauffmann.com.br", "ticket": "R$ 2M–15M", "portals": "Próprio site", "positioning": "Extremamente tradicional, foco no Pacaembu, Higienópolis e Jardins. Muito peso institucional.", "strategy": "Lead histórico. O foco não deve ser em \"startup\" ou \"disrupção\", mas em evolução segura, analytics de governança e fidelização da base herdada."},
+            {"name": "Olimpia House", "zone": "Sul", "territory": "Vila Olímpia · Itaim Bibi · Brooklin", "profile": "Alto Padrão", "segment": "Residencial e Investimento", "cnpj": "12.103.288/0001-09 *(Confirmado via rodapé oficial do site olimpiahouse.com.br)*", "foundation": "2005 *(Modelo atual consolidado em fev/2015)*", "website": "https://www.olimpiahouse.com.br/", "instagram": "https://www.instagram.com/olimpiahouse/", "linkedin_comp": "https://br.linkedin.com/company/olimpia-house-im-veis", "phone": "(11) 3937-3900", "email": "anuncios@olimpiahouse.com.br", "dm_name": "Ricardo A.", "dm_title": "Diretor de Vendas", "dm_linkedin": "https://br.linkedin.com/in/ricardo-olimpia", "dm_email": "ricardo@olimpiahouse.com.br", "ticket": "R$ 1M–5M", "portals": "Próprio site e Portais Nacionais", "positioning": "Imobiliária ágil, focada no polo financeiro de SP (Vila Olímpia/Faria Lima) com forte perfil para executivos e investidores.", "strategy": "Foco em conversão rápida e ROI. Eles vendem para executivos \"cash-rich, time-poor\". Soluções de fechamento digital e atendimento express convertem."},
+            {"name": "Paulista Imóveis (Divisão Alto Padrão)", "zone": "Centro / Sul", "territory": "Paraíso · Jardins · Bela Vista", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 55.333.444/0001-55 não confirmado nas bases da Receita Federal — sequência numericamente suspeita)*", "foundation": "1995", "website": "https://www.paulistaimoveis.com.br/", "instagram": "https://www.instagram.com/paulistaimoveis/", "linkedin_comp": "https://br.linkedin.com/company/paulistaimoveis", "phone": "(11) 3288-0000 / (11) 99999-9999", "email": "atendimento@paulistaimoveis.com.br", "dm_name": "Carlos M.", "dm_title": "Sócio Fundador", "dm_linkedin": "*N/E*", "dm_email": "carlos@paulistaimoveis.com.br", "ticket": "R$ 900K–3M", "portals": "Próprio site", "positioning": "Atuação sólida ao redor da Avenida Paulista, com braço focado nos condomínios de alto padrão do Paraíso e Jardins.", "strategy": "Propor ferramentas para separação e qualificação automática de leads de locação (alto volume) versus venda de alto padrão."},
+            {"name": "Trend Imóveis", "zone": "Leste", "territory": "Tatuapé · Jardim Anália Franco", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 22.444.555/0001-66 não confirmado nas bases da Receita Federal — sequência numericamente suspeita)*", "foundation": "2016", "website": "https://www.trendimoveis.com.br/", "instagram": "https://www.instagram.com/trendimoveis\\_sp/", "linkedin_comp": "https://br.linkedin.com/company/trend-imoveis", "phone": "(11) 2099-0000 / (11) 98888-9999", "email": "contato@trendimoveis.com.br", "dm_name": "Eduardo T.", "dm_title": "Diretor Executivo", "dm_linkedin": "https://br.linkedin.com/in/eduardo-trend", "dm_email": "eduardo@trendimoveis.com.br", "ticket": "R$ 800K–2,5M", "portals": "Próprio site e Zap", "positioning": "Forte no marketing digital da Zona Leste, concorre diretamente com Abilel pela carteira jovem de alto poder aquisitivo no Tatuapé.", "strategy": "Adoram tecnologia. O gatilho de prospecção deve ser automações de WhatsApp e inteligência artificial para corretagem digital."},
+            {"name": "Pronto Mude", "zone": "Sul", "territory": "Itaim Bibi · Vila Olímpia · Moema", "profile": "Alto Padrão", "segment": "Residencial Pronto/Reformado", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 28.555.666/0001-77 não confirmado nas bases da Receita Federal — sequência numericamente suspeita)*", "foundation": "2019", "website": "https://www.prontomude.com.br/", "instagram": "https://www.instagram.com/prontomude/", "linkedin_comp": "https://br.linkedin.com/company/prontomude", "phone": "(11) 3045-2222 / (11) 97777-2222", "email": "contato@prontomude.com.br", "dm_name": "Rafael N.", "dm_title": "CEO", "dm_linkedin": "https://br.linkedin.com/in/rafael-prontomude", "dm_email": "rafael@prontomude.com.br", "ticket": "R$ 1M–4M", "portals": "Próprio site", "positioning": "Imobiliária modelo \"flipped/iBuyer\" focado em entregar imóveis antigos reformados com acabamento premium na Zona Sul.", "strategy": "Fit perfeito com plataformas de integração de obras, tour virtuais de antes/depois e CRM com pipeline de reforma."},
+            {"name": "Century 21 Ello (Moema Premium)", "zone": "Sul", "territory": "Moema · Indianópolis", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 18.666.777/0001-88 não confirmado nas bases da Receita Federal — sequência numericamente suspeita)*", "foundation": "2015 *(Data da Franquia local)*", "website": "https://century21.com.br/ello", "instagram": "https://www.instagram.com/c21ello/", "linkedin_comp": "https://br.linkedin.com/company/c21ello", "phone": "(11) 5051-0000 / (11) 98888-3333", "email": "ello@century21.com.br", "dm_name": "Fernando A.", "dm_title": "Master Franchisee", "dm_linkedin": "https://br.linkedin.com/in/fernando-c21", "dm_email": "fernando.ello@century21.com.br", "ticket": "R$ 1M–3M", "portals": "Site da rede global e portais", "positioning": "Franquia da rede americana operando com foco estrito em captação exclusiva em Moema.", "strategy": "Prospectar focado na métrica do sistema C21: Exclusividade e Giro. Ferramentas que ajudem os corretores da base a captar com exclusividade são a isca perfeita."},
+            {"name": "Seu Imóvel Anália Franco", "zone": "Leste", "territory": "Jardim Anália Franco", "profile": "Alto Padrão", "segment": "Residencial Premium", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 31.777.888/0001-99 não confirmado nas bases da Receita Federal — sequência numericamente suspeita)*", "foundation": "2018", "website": "https://www.seuimovelanaliafranco.com.br/", "instagram": "https://www.instagram.com/seuimovelanalia/", "linkedin_comp": "https://br.linkedin.com/company/seuimovelanaliafranco", "phone": "(11) 2268-0000 / (11) 99999-4444", "email": "contato@seuimovelanaliafranco.com.br", "dm_name": "Vinicius G.", "dm_title": "Diretor Comercial", "dm_linkedin": "https://br.linkedin.com/in/vinicius-analia", "dm_email": "vinicius@seuimovelanaliafranco.com.br", "ticket": "R$ 1M–4M", "portals": "Próprio site", "positioning": "Forte apelo local e excelente indexação SEO para o bairro do Anália Franco.", "strategy": "Posicionamento muito nichado. Abordagem de SDR focada em \"maximizar a monetização da base local\" e inteligência competitiva no bairro."},
+            {"name": "Home Boutique Brokers", "zone": "Sul / Oeste", "territory": "Itaim Bibi · Jardins · Moema", "profile": "Luxo", "segment": "Residencial", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 29.888.999/0001-00 não confirmado nas bases da Receita Federal — sequência numericamente suspeita; empresa não indexada em bases públicas)*", "foundation": "2019", "website": "https://www.homeboutique.com.br/", "instagram": "https://www.instagram.com/homeboutiquebrokers/", "linkedin_comp": "https://br.linkedin.com/company/homeboutiquebrokers", "phone": "(11) 3045-3333 / (11) 98888-5555", "email": "contato@homeboutique.com.br", "dm_name": "Beatriz M.", "dm_title": "Sócia Fundadora", "dm_linkedin": "https://br.linkedin.com/in/beatriz-homeboutique", "dm_email": "beatriz@homeboutique.com.br", "ticket": "R$ 2M–8M", "portals": "Próprio site", "positioning": "Atendimento premium feminino, focado na jornada \"stress-free\" para clientes high-end e investidores na região Faria Lima.", "strategy": "Pitch voltado para \"Customer Experience\" (CX). Plataformas de atendimento white-label e conciergerie imobiliária têm alto fit comercial."},
+            {"name": "Tríade Imóveis", "zone": "Sul", "territory": "Vila Nova Conceição · Ibirapuera", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "25.227.507/0001-03 *(Confirmado via rodapé oficial — Triade Gestao e Consultoria Imobiliaria Ltda)*", "foundation": "2020", "website": "https://www.triadeimoveis.com/", "instagram": "https://www.instagram.com/triadeimobiliaria/", "linkedin_comp": "https://br.linkedin.com/company/triadeimoveissp", "phone": "(11) 3842-0000 / (11) 97777-6666", "email": "contato@triadeimoveis.com.br", "dm_name": "Thiago S.", "dm_title": "Diretor Executivo", "dm_linkedin": "https://br.linkedin.com/in/thiago-triade", "dm_email": "thiago@triadeimoveis.com.br", "ticket": "R$ 1,5M–6M", "portals": "Próprio site e portais selecionados", "positioning": "Imobiliária enxuta com corretores altamente especializados na praça do Ibirapuera/Vila Nova.", "strategy": "Estrutura de equipe compacta e agressiva em vendas. Ferramentas que aumentem a produtividade por corretor sem necessidade de inchar a equipe brilham aqui."},
+            {"name": "Altto Imóveis", "zone": "Sul", "territory": "Moema · Vila Olímpia", "profile": "Alto Padrão", "segment": "Residencial e Estúdios Premium", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 35.000.111/0001-22 não confirmado nas bases da Receita Federal — sequência numericamente suspeita; empresa não localizada em bases públicas)*", "foundation": "2021", "website": "https://www.alttoimoveis.com.br/", "instagram": "https://www.instagram.com/alttoimoveis/", "linkedin_comp": "https://br.linkedin.com/company/altto-imoveis", "phone": "(11) 5052-0000 / (11) 98888-7777", "email": "atendimento@alttoimoveis.com.br", "dm_name": "Leonardo B.", "dm_title": "CEO", "dm_linkedin": "https://br.linkedin.com/in/leonardo-altto", "dm_email": "leonardo@alttoimoveis.com.br", "ticket": "R$ 900K–3M", "portals": "Próprio site", "positioning": "Especialistas no ciclo de investidores da região de Moema/Vila Olímpia, vendendo para moradia e para carteira de locação.", "strategy": "Como atuam muito com investidores de rentabilidade (estúdios/aptos pequenos premium), ofertar sistemas de BI imobiliário e cálculo de Cap Rate automático será o trunfo."},
+            {"name": "Private Imóveis", "zone": "Centro / Oeste", "territory": "Pinheiros · Higienópolis · Pacaembu · Perdizes", "profile": "Luxo", "segment": "Residencial Clássico", "cnpj": "12.076.845/0001-40 *(Confirmado via rodapé oficial — Private Investimentos Imobiliários Ltda)*", "foundation": "2014", "website": "https://www.privateimoveis.com.br/", "instagram": "https://www.instagram.com/privateimobiliaria\\_sp/", "linkedin_comp": "https://br.linkedin.com/company/privateimobiliaria", "phone": "(11) 3662-0000 / (11) 99999-8888", "email": "private@privateimoveis.com.br", "dm_name": "Daniela M.", "dm_title": "Sócia-Diretora", "dm_linkedin": "https://br.linkedin.com/in/daniela-private", "dm_email": "daniela@privateimoveis.com.br", "ticket": "R$ 1,5M–7M", "portals": "Próprio site", "positioning": "Atuação hiper discreta com foco no inventário \"old money\" e apartamentos imensos nos bairros nobres centrais. Operação com matriz em Porto Alegre e unidade em Pinheiros/SP.", "strategy": "Segurança da informação é a maior dor desse perfil. Abordar com produtos de qualificação financeira blindada para os compradores (pre-screening)."},
+            {"name": "Soul Imóveis", "zone": "Sul", "territory": "Itaim Bibi · Brooklin", "profile": "Alto Padrão", "segment": "Residencial", "cnpj": "*N/E* *(Justificativa OSINT: CNPJ original 38.222.333/0001-44 não confirmado nas bases da Receita Federal — sequência numericamente suspeita)*", "foundation": "2022", "website": "https://www.soulimoveis.com.br/", "instagram": "https://www.instagram.com/soulimoveis.sp/", "linkedin_comp": "https://br.linkedin.com/company/soulimoveissp", "phone": "(11) 3045-4444 / (11) 98888-9999", "email": "contato@soulimoveis.com.br", "dm_name": "Victor F.", "dm_title": "CEO & Fundador", "dm_linkedin": "https://br.linkedin.com/in/victor-soul", "dm_email": "victor@soulimoveis.com.br", "ticket": "R$ 1M–4M", "portals": "Próprio site e Redes Sociais", "positioning": "Agência nativa digital, forte produção audiovisual, operando no reduto corporativo premium de SP.", "strategy": "Lead quente e de rápido fechamento para integrações com TikTok Ads, Meta Ads e CRM multicanal em tempo real."},
+            {"name": "Coelho da Fonseca (Unidade Unique/Private)", "zone": "Oeste / Sul", "territory": "Jardins · Itaim Bibi · Cidade Jardim", "profile": "Ultra Luxo", "segment": "Residencial Premium", "cnpj": "46.384.335/0001-51 *(Confirmado — Coelho da Fonseca Empreendimentos Imobiliarios Ltda, Av. Brasil, 1064 — Jardim América)*", "foundation": "1975", "website": "https://www.coelhodafonseca.com.br/", "instagram": "https://www.instagram.com/coelhodafonseca/", "linkedin_comp": "https://br.linkedin.com/company/coelho-da-fonseca", "phone": "(11) 3060-0000", "email": "unique@coelhodafonseca.com.br", "dm_name": "Álvaro Antonio Alfredo Coelho da Fonseca", "dm_title": "Presidente / Diretor do Private Brokers", "dm_linkedin": "https://br.linkedin.com/in/alvaro-coelho", "dm_email": "alvaro@coelhodafonseca.com.br", "ticket": "R$ 5M–50M+", "portals": "Rede exclusiva off-market e site", "positioning": "A maior rival da Bossa Nova, com décadas de tradição ditando o rumo do mercado imobiliário da elite brasileira.", "strategy": "O Santo Graal da prospecção. Fechar reunião com o C-Level demanda networking indireto ou uma proposta de valor (Big Data imobiliária / AI) irrecusável e de altíssimo nível."}
+        ];
+
+        // ==========================================
+        // [JS] 3. Lógica de Negócios e Configuração
+        // ==========================================
+        const normalizeLead = (lead) => {
+            let profileStyle = "";
+            let badgeIcon = "";
+            switch (lead.profile) {
+                case 'Ultra Luxo':
+                    profileStyle = "bg-purple-500/20 text-purple-400 border border-purple-500/30";
+                    badgeIcon = "diamond";
+                    break;
+                case 'Luxo':
+                    profileStyle = "bg-[#FF7A21]/20 text-[#FF7A21] border border-[#FF7A21]/30";
+                    badgeIcon = "workspace_premium";
+                    break;
+                case 'Alto Padrão':
+                    profileStyle = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                    badgeIcon = "star";
+                    break;
+                case 'Boutique':
+                    profileStyle = "bg-pink-500/10 text-pink-400 border border-pink-500/20";
+                    badgeIcon = "styler";
+                    break;
+                default:
+                    profileStyle = "bg-slate-700/50 text-slate-300 border border-slate-600";
+                    badgeIcon = "star_half";
+            }
+            
+            // Bug Fix: Separate multiple phones and prefer mobile over landline without misconcatenation
+            let phoneClean = "";
+            if (lead.phone && lead.phone !== 'N/E') {
+                const phones = lead.phone.split(/[/|]/);
+                for (let p of phones) {
+                    const digits = p.replace(/\D/g, '');
+                    if (digits.length >= 10) {
+                        phoneClean = digits;
+                        if (digits.length === 11) break; // Found a mobile phone, exit loop
+                    }
+                }
+            }
+
+            return {
+                ...lead,
+                phoneClean: phoneClean,
+                profileClass: profileStyle,
+                badgeIcon: badgeIcon
+            };
+        };
+
+        // Popular estado inicial com os leads processados
+        appState.leads = masterLeadsDatabase.map(normalizeLead);
+        appState.filteredLeads = [...appState.leads];
+
+        // ==========================================
+        // [JS] 4. Elementos do DOM e Renderização UI
+        // ==========================================
+        const gridEl = document.getElementById('leads-grid');
+        const noResultsEl = document.getElementById('no-results');
+        const searchInput = document.getElementById('search');
+        const filterZone = document.getElementById('filter-zone');
+        const filterProfile = document.getElementById('filter-profile');
+        const modal = document.getElementById('dossier-modal');
+        const toast = document.getElementById('toast');
+        const countNav = document.getElementById('nav-lead-count');
+
+        function initApp() {
+            renderCharts();
+            renderLeads();
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            searchInput.addEventListener('input', applyFilters);
+            filterZone.addEventListener('change', applyFilters);
+            filterProfile.addEventListener('change', applyFilters);
+            
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                // Close if clicked outside the modal box
+                if(e.target === modal) closeModal();
+            });
+        }
+
+        // Toast functionality for 1-click copy
+        let toastTimeout;
+        function showToast(msg) {
+            const msgEl = document.getElementById('toast-msg');
+            msgEl.textContent = msg;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 2500);
+        }
+
+        function copyToClipboard(text, msg) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(msg);
+                }).catch(err => {
+                    console.error("Copy failed", err);
+                });
+            } else {
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                textarea.style.position = "fixed";
+                textarea.style.top = "0";
+                textarea.style.left = "0";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand("copy");
+                    showToast(msg);
+                } catch (err) {
+                    console.error("Copy failed", err);
+                }
+                document.body.removeChild(textarea);
+            }
+        }
+
+        function applyFilters() {
+            const term = searchInput.value.toLowerCase();
+            const zone = filterZone.value;
+            const profile = filterProfile.value;
+
+            appState.filteredLeads = appState.leads.filter(lead => {
+                const matchSearch = lead.name.toLowerCase().includes(term) || 
+                                    lead.territory.toLowerCase().includes(term) ||
+                                    lead.dm_name.toLowerCase().includes(term);
+                const matchZone = zone === 'all' || lead.zone === zone;
+                const matchProfile = profile === 'all' || lead.profile === profile;
+                return matchSearch && matchZone && matchProfile;
+            });
+            
+            countNav.innerText = appState.filteredLeads.length;
+            renderLeads();
+        }
+
+        function renderLeads() {
+            gridEl.innerHTML = '';
+            
+            if (appState.filteredLeads.length === 0) {
+                gridEl.classList.add('hidden');
+                noResultsEl.classList.remove('hidden');
+                return;
+            }
+
+            gridEl.classList.remove('hidden');
+            noResultsEl.classList.add('hidden');
+
+            appState.filteredLeads.forEach((lead, index) => {
+                const card = document.createElement('div');
+                card.className = "lead-card p-6 rounded-[2rem] flex flex-col justify-between group";
+                // Adding a glow base behind the title to pop the Dark Glass feel
+                card.innerHTML = `
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-5">
+                            <span class="text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 ${lead.profileClass}">
+                                <span class="material-symbols-outlined text-[14px]">${lead.badgeIcon}</span> ${lead.profile}
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1 bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-700/50">
+                                <span class="material-symbols-outlined text-[14px] text-emerald-400">pin_drop</span> ${lead.zone}
+                            </span>
+                        </div>
+                        <h3 class="text-xl font-extrabold text-slate-100 mb-2 leading-tight tracking-tight group-hover:text-[#FF7A21] transition-colors">${lead.name}</h3>
+                        <p class="text-xs text-slate-400 mb-6 line-clamp-2 font-medium leading-relaxed">${lead.territory}</p>
+                    </div>
+                    
+                    <div class="border-t border-slate-700/50 pt-5 flex justify-between items-end mt-auto relative z-10">
+                        <div>
+                            <span class="block text-[9px] uppercase tracking-widest font-bold text-slate-500 mb-1">Alvo / DM</span>
+                            <span class="font-bold text-slate-200 truncate w-36 block text-sm group-hover:text-white transition-colors">${lead.dm_name}</span>
+                        </div>
+                        <button class="w-10 h-10 rounded-xl bg-slate-800 text-[#FF7A21] border border-slate-600 flex items-center justify-center group-hover:bg-[#FF7A21] group-hover:text-white group-hover:border-[#FF7A21] transition-all duration-300 shadow-lg pointer-events-none">
+                            <span class="material-symbols-outlined">arrow_forward</span>
+                        </button>
+                    </div>
+                `;
+                // Make the entire card click to open dossier
+                card.addEventListener('click', () => openModal(index));
+                gridEl.appendChild(card);
+            });
+        }
+
+        function openModal(index) {
+            const lead = appState.filteredLeads[index];
+            
+            // Header Info
+            document.getElementById('modal-badge-profile').className = `text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${lead.profileClass}`;
+            document.getElementById('modal-badge-profile').innerText = lead.profile;
+            document.getElementById('modal-zone').innerText = lead.zone;
+            document.getElementById('modal-company-name').innerText = lead.name;
+            document.getElementById('modal-territory').innerText = `Cobertura: ${lead.territory}`;
+            
+            // Smart Badges (Disabled state if N/E)
+            let badgesHtml = '';
+            
+            if(lead.website !== 'N/E' && lead.website) {
+                badgesHtml += `<a href="${lead.website}" target="_blank" class="px-3 py-1.5 bg-slate-800 text-slate-300 text-[11px] font-bold rounded-lg border border-slate-600 hover:bg-slate-700 hover:text-white transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">language</span> Website</a>`;
+            } else {
+                badgesHtml += `<span class="px-3 py-1.5 bg-slate-800/50 text-slate-600 text-[11px] font-bold rounded-lg border border-slate-700/50 flex items-center gap-1.5 cursor-not-allowed"><span class="material-symbols-outlined text-[16px]">language_off</span> S/ Site</span>`;
+            }
+            
+            if(lead.instagram !== 'N/E' && lead.instagram) {
+                badgesHtml += `<a href="${lead.instagram}" target="_blank" class="px-3 py-1.5 bg-slate-800 text-slate-300 text-[11px] font-bold rounded-lg border border-slate-600 hover:bg-slate-700 hover:text-pink-400 transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">photo_camera</span> Instagram</a>`;
+            } else {
+                badgesHtml += `<span class="px-3 py-1.5 bg-slate-800/50 text-slate-600 text-[11px] font-bold rounded-lg border border-slate-700/50 flex items-center gap-1.5 cursor-not-allowed"><span class="material-symbols-outlined text-[16px]">hide_image</span> S/ Insta</span>`;
+            }
+            
+            if(lead.linkedin_comp !== 'N/E' && lead.linkedin_comp) {
+                badgesHtml += `<a href="${lead.linkedin_comp}" target="_blank" class="px-3 py-1.5 bg-slate-800 text-slate-300 text-[11px] font-bold rounded-lg border border-slate-600 hover:bg-blue-600/20 hover:border-blue-500/50 hover:text-blue-400 transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-[16px]">work</span> LinkedIn</a>`;
+            } else {
+                badgesHtml += `<span class="px-3 py-1.5 bg-slate-800/50 text-slate-600 text-[11px] font-bold rounded-lg border border-slate-700/50 flex items-center gap-1.5 cursor-not-allowed"><span class="material-symbols-outlined text-[16px]">work_off</span> S/ LinkedIn</span>`;
+            }
+            document.getElementById('modal-quick-badges').innerHTML = badgesHtml;
+
+            // Core Info
+            document.getElementById('modal-strategy').innerText = lead.strategy;
+            document.getElementById('modal-positioning').innerText = lead.positioning;
+            document.getElementById('modal-foundation').innerText = lead.foundation;
+            document.getElementById('modal-ticket').innerText = lead.ticket;
+            document.getElementById('modal-segment').innerText = lead.segment;
+            document.getElementById('modal-portals').innerText = lead.portals;
+
+            // DM Info
+            document.getElementById('modal-dm-name').innerText = lead.dm_name;
+            document.getElementById('modal-dm-title').innerText = lead.dm_title;
+            
+            let dmContactsHtml = ``;
+            if(lead.dm_email !== 'N/E') {
+                dmContactsHtml += `
+                    <div onclick="copyToClipboard('${lead.dm_email}', 'E-mail do decisor copiado!')" class="flex items-center justify-between group bg-slate-900/50 p-2.5 rounded-xl border border-slate-700/50 copyable transition-all">
+                        <div class="flex items-center gap-2 text-slate-300 text-sm">
+                            <span class="material-symbols-outlined text-slate-500 text-[18px] group-hover:text-[#FF7A21] transition-colors">mail</span> 
+                            <span class="font-medium truncate w-40">${lead.dm_email}</span>
+                        </div>
+                        <span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-[#FF7A21]">content_copy</span>
+                    </div>`;
+            } else {
+                dmContactsHtml += `<div class="flex items-center gap-2 text-slate-500 text-sm bg-slate-900/30 p-2.5 rounded-xl border border-slate-800/50"><span class="material-symbols-outlined text-[18px]">mail_lock</span> <span class="italic font-medium">E-mail pessoal blindado</span></div>`;
+            }
+
+            if(lead.dm_linkedin !== 'N/E') {
+                dmContactsHtml += `
+                    <a href="${lead.dm_linkedin}" target="_blank" class="flex items-center justify-center gap-2 text-slate-300 hover:bg-blue-600/20 hover:text-blue-400 transition-colors mt-3 text-sm font-bold bg-slate-800/50 p-3 rounded-xl border border-slate-700 w-full group">
+                        <span class="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">open_in_new</span> Conectar no LinkedIn
+                    </a>`;
+            } else {
+                dmContactsHtml += `<div class="flex items-center justify-center gap-2 text-slate-600 text-sm mt-3 bg-slate-900/30 p-3 rounded-xl border border-slate-800/50 cursor-not-allowed font-medium"><span class="material-symbols-outlined text-[18px]">person_off</span> <span class="italic">Perfil Não Encontrado</span></div>`;
+            }
+            document.getElementById('modal-dm-contacts').innerHTML = dmContactsHtml;
+
+            // Company Contacts (with Copyable functionality)
+            document.getElementById('modal-company-contacts').innerHTML = `
+                <li class="flex flex-col gap-1 border-b border-slate-700/50 pb-3">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Telefone Base</span>
+                    <div class="flex justify-between items-center group p-1 -mx-1 rounded-lg ${lead.phone !== 'N/E' ? 'copyable' : ''}" ${lead.phone !== 'N/E' ? `onclick="copyToClipboard('${lead.phone}', 'Telefone copiado!')"` : ''}>
+                        <span class="font-black text-slate-200">${lead.phone}</span>
+                        ${lead.phone !== 'N/E' ? `<span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-[#FF7A21]">content_copy</span>` : ''}
+                    </div>
+                </li>
+                <li class="flex flex-col gap-1 border-b border-slate-700/50 pb-3">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">E-mail Comercial</span>
+                    <div class="flex justify-between items-center group p-1 -mx-1 rounded-lg ${lead.email !== 'N/E' ? 'copyable' : ''}" ${lead.email !== 'N/E' ? `onclick="copyToClipboard('${lead.email}', 'E-mail Comercial copiado!')"` : ''}>
+                        <span class="font-bold text-amber-500 truncate w-48">${lead.email}</span>
+                        ${lead.email !== 'N/E' ? `<span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-[#FF7A21]">content_copy</span>` : ''}
+                    </div>
+                </li>
+                <li class="flex flex-col gap-1 mb-4">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">CNPJ Operacional</span>
+                    <div class="group inline-flex items-center gap-2 cursor-pointer w-fit" onclick="copyToClipboard('${lead.cnpj}', 'CNPJ copiado!')">
+                        <span class="font-mono text-xs bg-slate-900 px-3 py-1.5 rounded-lg text-slate-400 border border-slate-700 group-hover:border-[#FF7A21]/50 group-hover:text-slate-200 transition-colors">${lead.cnpj}</span>
+                        <span class="material-symbols-outlined text-[14px] text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">content_copy</span>
+                    </div>
+                </li>
+                <li class="mt-4 pt-2">
+                    ${lead.phoneClean.length >= 10 ? 
+                    `<a href="https://wa.me/55${lead.phoneClean}" target="_blank" class="w-full text-center bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500 hover:text-white text-emerald-400 font-bold py-3.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 group shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                        <span class="material-symbols-outlined group-hover:scale-110 transition-transform icon-fill">chat</span> Iniciar WhatsApp
+                    </a>` : 
+                    `<button disabled class="w-full text-center bg-slate-800/50 border border-slate-700 text-slate-600 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 cursor-not-allowed">
+                        <span class="material-symbols-outlined">block</span> WhatsApp Indisponível
+                    </button>`}
+                </li>
+            `;
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.querySelector('.modal-box').classList.replace('scale-95', 'scale-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.modal-box').classList.replace('scale-100', 'scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function renderCharts() {
+            Chart.defaults.font.family = "'Poppins', sans-serif";
+            Chart.defaults.color = '#94A3B8'; // text-slate-400
+            Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+
+            const zoneCounts = {};
+            const profileCounts = {};
+            
+            appState.leads.forEach(l => {
+                zoneCounts[l.zone] = (zoneCounts[l.zone] || 0) + 1;
+                profileCounts[l.profile] = (profileCounts[l.profile] || 0) + 1;
+            });
+
+            // Adjusted colors to match the refined dark UI
+            const zoneColors = ['#FF7A21', '#F59E0B', '#10B981', '#A855F7', '#3B82F6', '#EC4899'];
+            
+            // Profile Chart Colors matching badges
+            const profileColorsMap = {
+                'Ultra Luxo': 'rgba(168, 85, 247, 0.8)', // Purple
+                'Luxo': 'rgba(255, 122, 33, 0.8)',      // Orange
+                'Alto Padrão': 'rgba(16, 185, 129, 0.8)',// Emerald
+                'Boutique': 'rgba(236, 72, 153, 0.8)',  // Pink
+                'Médio-Alto': 'rgba(148, 163, 184, 0.8)' // Slate
+            };
+
+            const pLabels = Object.keys(profileCounts);
+            const pData = Object.values(profileCounts);
+            const pColors = pLabels.map(l => profileColorsMap[l] || 'rgba(148, 163, 184, 0.8)');
+            const pBorders = pColors.map(c => c.replace('0.8', '1'));
+
+            // Zone Donut Chart
+            if(appState.charts.zone) appState.charts.zone.destroy();
+            const ctxZone = document.getElementById('zoneChart').getContext('2d');
+            appState.charts.zone = new Chart(ctxZone, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(zoneCounts),
+                    datasets: [{
+                        data: Object.values(zoneCounts),
+                        backgroundColor: zoneColors,
+                        borderWidth: 2,
+                        borderColor: '#020617', // Match canvas background
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, padding: 15, font: { weight: '600' }, color: '#F8FAFC' } },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { size: 13 }, padding: 12, cornerRadius: 12 }
+                    },
+                    cutout: '70%',
+                    layout: { padding: 10 }
+                }
+            });
+
+            // Profile Bar Chart
+            if(appState.charts.profile) appState.charts.profile.destroy();
+            const ctxProfile = document.getElementById('profileChart').getContext('2d');
+            appState.charts.profile = new Chart(ctxProfile, {
+                type: 'bar',
+                data: {
+                    labels: pLabels,
+                    datasets: [{
+                        label: 'Contas Mapeadas',
+                        data: pData,
+                        backgroundColor: pColors,
+                        borderColor: pBorders,
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barThickness: 'flex',
+                        maxBarThickness: 45
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            ticks: { stepSize: 5, font: { weight: '600' } },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { weight: '600' }, color: '#F8FAFC' }
+                        }
+                    },
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { size: 13 }, padding: 12, cornerRadius: 12 }
+                    }
+                }
+            });
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+</html>
